@@ -1,0 +1,391 @@
+/* ============================================================
+   BRICKSTORM ULTRA — style.css
+   All visual styling: layout, HUD, overlay, chips, animations
+   ============================================================ */
+
+/* ---------- Google Fonts ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+
+/* ---------- Reset ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- CSS Variables (Theme) ---------- */
+:root {
+  --bg:      #04050d;
+  --panel:   #080c18;
+  --border:  rgba(80, 160, 255, 0.12);
+  --text:    #e8f4ff;
+  --muted:   rgba(180, 210, 255, 0.45);
+  --accent:  #00d4ff;
+  --accent2: #ff3d7f;
+  --accent3: #ffcc00;
+}
+
+/* ---------- Page ---------- */
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px 8px 40px;
+  overflow-x: hidden;
+}
+
+/* ---------- Starfield Background ---------- */
+#stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: twinkle var(--d, 3s) ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.08; }
+  to   { opacity: 0.60; }
+}
+
+/* ---------- Main Shell ---------- */
+#shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ---------- Title ---------- */
+#gtitle {
+  font-family: 'Orbitron', monospace;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(0,212,255,0.3);
+  margin-bottom: 4px;
+  animation: tp 3s ease-in-out infinite alternate;
+}
+
+#subtitle {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  color: var(--accent2);
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px var(--accent2);
+}
+
+@keyframes tp {
+  from { text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(0,212,255,0.2); }
+  to   { text-shadow: 0 0 30px var(--accent), 0 0 90px rgba(0,212,255,0.5); }
+}
+
+/* ---------- HUD Bar ---------- */
+#hud {
+  display: flex;
+  gap: 0;
+  width: 540px;
+  max-width: calc(100vw - 16px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.hc {
+  flex: 1;
+  padding: 7px 10px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.hc:last-child { border-right: none; }
+
+/* HUD label (tiny uppercase) */
+.hl {
+  font-family: 'Orbitron', monospace;
+  font-size: 6px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* HUD value (large number) */
+.hv {
+  font-family: 'Orbitron', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.hv.bump { animation: bump 0.3s ease; }
+
+@keyframes bump {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); color: var(--accent); }
+  100% { transform: scale(1); }
+}
+
+/* Combo display */
+#combo-disp {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+/* Lives row (hearts) */
+#lives-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.hrt {
+  font-size: 12px;
+  transition: transform 0.3s, filter 0.3s;
+  filter: grayscale(1) brightness(0.3); /* dim = lost */
+}
+
+.hrt.on  { filter: none; }
+.hrt.pop { animation: hpop 0.4s ease; }
+
+@keyframes hpop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.7); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Canvas Wrapper ---------- */
+#cwrap {
+  position: relative;
+  width: 540px;
+  max-width: calc(100vw - 16px);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  border-left:  1px solid var(--border);
+  border-right: 1px solid var(--border);
+  cursor: none;
+  background: var(--bg);
+}
+
+/* ---------- Overlay (Start / Game Over / Level Up) ---------- */
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(4, 5, 13, 0.92);
+  backdrop-filter: blur(6px);
+  transition: opacity 0.35s;
+  z-index: 10;
+}
+
+#overlay.show { opacity: 1; pointer-events: all; }
+#overlay.hide { opacity: 0; pointer-events: none; }
+
+/* Overlay title */
+.ot {
+  font-family: 'Orbitron', monospace;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* Overlay subtitle text */
+.os {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.9;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* Overlay button */
+.ob {
+  padding: 11px 36px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  transition: all 0.2s;
+}
+
+.ob:hover {
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 30px rgba(0,212,255,0.3);
+}
+
+/* End-screen stats row */
+.ostats {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ostat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.osl {
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Orbitron', monospace;
+}
+
+.osv {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Orbitron', monospace;
+}
+
+/* ---------- Power-Up Bar ---------- */
+#bbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 540px;
+  max-width: calc(100vw - 16px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 0 10px;
+  min-height: 30px;
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+
+.blab {
+  font-size: 8px;
+  color: var(--muted);
+  font-family: 'Orbitron', monospace;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+/* ---------- Power-Up Chips ---------- */
+.chip {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1px solid;
+  animation: cin 0.25s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+}
+
+@keyframes cin {
+  from { transform: scale(0.5) translateY(6px); opacity: 0; }
+  to   { transform: scale(1)   translateY(0);   opacity: 1; }
+}
+
+/* One colour class per power-up type */
+.chip.wide    { color: #60a5fa; border-color: #60a5fa55; background: #60a5fa15; }
+.chip.multi   { color: #ff3d7f; border-color: #ff3d7f55; background: #ff3d7f15; }
+.chip.slow    { color: #00ff9d; border-color: #00ff9d55; background: #00ff9d15; }
+.chip.laser   { color: #ffcc00; border-color: #ffcc0055; background: #ffcc0015; }
+.chip.shield  { color: #a78bfa; border-color: #a78bfa55; background: #a78bfa15; }
+.chip.life    { color: #ff6b6b; border-color: #ff6b6b55; background: #ff6b6b15; }
+.chip.fire    { color: #ff7c2a; border-color: #ff7c2a55; background: #ff7c2a15; }
+.chip.gravity { color: #c084fc; border-color: #c084fc55; background: #c084fc15; }
+.chip.ghost   { color: #94a3b8; border-color: #94a3b855; background: #94a3b815; }
+.chip.rewind  { color: #fb923c; border-color: #fb923c55; background: #fb923c15; }
+.chip.magnet  { color: #f472b6; border-color: #f472b655; background: #f472b615; }
+.chip.rage    { color: #ef4444; border-color: #ef444455; background: #ef444415; }
+
+/* ---------- Floating Score Pop ---------- */
+.fpop {
+  position: absolute;
+  pointer-events: none;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 0 8px currentColor;
+  animation: fup 0.9s ease forwards;
+  z-index: 20;
+  transform: translateX(-50%);
+}
+
+@keyframes fup {
+  0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-38px); }
+}
+
+/* ---------- Hint Bar ---------- */
+#hint {
+  margin-top: 8px;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  font-family: 'Orbitron', monospace;
+  text-align: center;
+}
+
+/* ---------- Event Banner (mid-game announcements) ---------- */
+#event-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #fff;
+  text-shadow: 0 0 20px currentColor;
+  z-index: 15;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#event-banner.show { opacity: 1; }

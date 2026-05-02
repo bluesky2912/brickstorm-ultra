@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BRICKSTORM ULTRA</title>
+  //brickstorm ultra
+
+  <!-- All visual styling lives in style.css -->
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       STARFIELD  (dots injected by game.js)
+       ═══════════════════════════════════════ -->
+  <div id="stars"></div>
+
+  <!-- ═══════════════════════════════════════
+       MAIN SHELL
+       ═══════════════════════════════════════ -->
+  <div id="shell">
+
+    <!-- Title -->
+    <div id="gtitle">BRICKSTORM</div>
+    <div id="subtitle">⚡ ULTRA EDITION ⚡</div>
+
+    <!-- ── HUD BAR ── -->
+    <div id="hud">
+
+      <div class="hc">
+        <span class="hl">Score</span>
+        <span class="hv" id="hv-score">0</span>
+      </div>
+
+      <div class="hc">
+        <span class="hl">Best</span>
+        <span class="hv" id="hv-best">0</span>
+      </div>
+
+      <div class="hc">
+        <span class="hl">Level</span>
+        <span class="hv" id="hv-level">1</span>
+      </div>
+
+      <div class="hc">
+        <span class="hl">Combo</span>
+        <div id="combo-disp">x1</div>
+      </div>
+
+      <!-- Rage meter fills as you break bricks / build combos -->
+      <div class="hc">
+        <span class="hl">Rage</span>
+        <div id="rage-bar-wrap"
+             style="width:100%;height:8px;background:rgba(255,255,255,0.08);
+                    border-radius:4px;margin-top:4px;overflow:hidden">
+          <div id="rage-bar"
+               style="width:0%;height:100%;background:#ef4444;
+                      border-radius:4px;transition:width 0.1s">
+          </div>
+        </div>
+      </div>
+
+      <div class="hc">
+        <span class="hl">Lives</span>
+        <div id="lives-row"></div>
+      </div>
+
+    </div><!-- /hud -->
+
+    <!-- ── CANVAS AREA ── -->
+    <div id="cwrap">
+
+      <!-- Game canvas (540 × 420 logical pixels, CSS scales it) -->
+      <canvas id="c" width="540" height="420"></canvas>
+
+      <!-- Start / Level-Up / Game-Over overlay -->
+      <div id="overlay" class="show">
+        <div class="ot" id="ot" style="color:var(--accent)">BRICKSTORM</div>
+        <div class="os" id="os">
+          Move with mouse or ← →<br>
+          Click or Space to launch<br><br>
+          <b style="color:var(--accent)">NEW:</b>
+          Gravity Wells · Ghost Mode · Rage Meter · Time Rewind<br>
+          Brick Magnets · Wormholes · Combo Nukes!
+        </div>
+        <div class="ostats" id="ostats" style="display:none"></div>
+        <button class="ob" id="obtn">LAUNCH</button>
+      </div>
+
+      <!-- Mid-game event banner (e.g. "WORMHOLE OPENED") -->
+      <div id="event-banner"></div>
+
+    </div><!-- /cwrap -->
+
+    <!-- ── ACTIVE POWER-UPS BAR ── -->
+    <div id="bbar">
+      <span class="blab">POWER-UPS</span>
+      <!-- chip badges are injected here by game.js -->
+    </div>
+
+    <!-- ── KEYBOARD HINT ── -->
+    <div id="hint">
+      ← → MOVE &nbsp;·&nbsp;
+      SPACE LAUNCH &nbsp;·&nbsp;
+      R = REWIND &nbsp;·&nbsp;
+      Q = GRAVITY FLIP
+    </div>
+
+  </div><!-- /shell -->
+
+  <!-- All game logic lives in game.js (loaded last so DOM is ready) -->
+  <script src="game.js"></script>
+
+</body>
+</html>
