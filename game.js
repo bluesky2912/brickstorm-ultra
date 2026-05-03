@@ -3,7 +3,6 @@
    New features:
    - 🔊 Web Audio API synthesized sounds (no files needed)
    - 👾 Boss bricks with HP bar (every 5 levels)
-   - ⏱  Bullet time on near-miss
    - ✨ Streak flash + multiplier display
    - 🎱 Ball skin selector (fire/plasma/ghost)
    - 🧩 Brick patterns (wave, diamond, checkerboard, spiral)
@@ -119,11 +118,6 @@ let frame = 0;
 
 let screenShake = 0;
 
-// NEW: Bullet time state
-let bulletTime = false;
-let bulletTimeFrames = 0;
-let nearMissCooldown = 0;
-
 // NEW: Boss brick
 let bossActive = false;
 let bossBrick  = null;
@@ -145,8 +139,7 @@ let skinSelectActive = false;
 // NEW: Total bricks broken this session (for achievements)
 let sessionBricks = 0;
 
-// NEW: Consecutive paddle hits without missing (for near-miss detection)
-let paddleStreakHits = 0;
+
 
 
 /* ============================================================
@@ -181,12 +174,6 @@ function ensureAudio() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-/**
- * Play a synthesized sound.
- * @param {string} type - 'brickHit'|'brickBreak'|'paddleHit'|'powerUp'|'wallHit'|
- *                        'laserFire'|'combo'|'nuke'|'rage'|'loseLife'|'levelUp'|
- *                        'bossHit'|'bulletTime'|'wormhole'|'rewind'
- */
 function playSound(type) {
   try {
     ensureAudio();
@@ -294,7 +281,6 @@ function playSound(type) {
       }
 
       case 'nuke': {
-        // Big explosion sound
         const buf = ac.createBuffer(1, ac.sampleRate * 0.8, ac.sampleRate);
         const data = buf.getChannelData(0);
         for (let i = 0; i < data.length; i++) {
@@ -365,19 +351,6 @@ function playSound(type) {
         g.gain.setValueAtTime(0.2, now);
         g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
         o.start(now); o.stop(now + 0.2);
-        break;
-      }
-
-      case 'bulletTime': {
-        const o = ac.createOscillator();
-        const g = ac.createGain();
-        o.connect(g); g.connect(ac.destination);
-        o.type = 'sine';
-        o.frequency.setValueAtTime(800, now);
-        o.frequency.exponentialRampToValueAtTime(200, now + 0.4);
-        g.gain.setValueAtTime(0.08, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        o.start(now); o.stop(now + 0.4);
         break;
       }
 
@@ -543,9 +516,6 @@ function hideOv() {
    7. BRICK GENERATION  (now with patterns!)
    ============================================================ */
 
-/**
- * Seeded random for daily challenges
- */
 function seededRand(seed) {
   let s = seed;
   return function() {
@@ -554,19 +524,14 @@ function seededRand(seed) {
   };
 }
 
-/**
- * Pick a brick layout pattern based on level.
- * Returns a 2D boolean grid [row][col] — true = place a brick.
- */
 function makeBrickPattern(rows, cols, lvl, rng) {
   const r = rng || Math.random.bind(Math);
   const grid = Array.from({ length: rows }, () => new Array(cols).fill(true));
   const pat = (lvl - 1) % 6;
 
-  if (pat === 0) return grid; // full grid
+  if (pat === 0) return grid;
 
   if (pat === 1) {
-    // Checkerboard
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++)
         grid[row][col] = (row + col) % 2 === 0;
@@ -574,7 +539,6 @@ function makeBrickPattern(rows, cols, lvl, rng) {
   }
 
   if (pat === 2) {
-    // Diamond / hollow diamond
     const cx = (cols - 1) / 2, cy = (rows - 1) / 2;
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++) {
@@ -585,7 +549,6 @@ function makeBrickPattern(rows, cols, lvl, rng) {
   }
 
   if (pat === 3) {
-    // Wave: sine-based rows
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++) {
         const wave = Math.sin((col / cols) * Math.PI * 2 + row * 0.8);
@@ -595,7 +558,6 @@ function makeBrickPattern(rows, cols, lvl, rng) {
   }
 
   if (pat === 4) {
-    // V shape / funnel
     const cx = (cols - 1) / 2;
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++) {
@@ -606,7 +568,6 @@ function makeBrickPattern(rows, cols, lvl, rng) {
   }
 
   if (pat === 5) {
-    // Outer border + inner cross
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++) {
         const border = row === 0 || row === rows - 1 || col === 0 || col === cols - 1;
@@ -624,7 +585,6 @@ function makeBricks() {
   bossActive = false;
   bossBrick  = null;
 
-  // Every 5 levels: BOSS level (single high-HP boss + support bricks)
   if (level % 5 === 0) {
     makeBossLevel();
     return;
@@ -689,21 +649,20 @@ function makeBossLevel() {
     sh: 0, pulse: 0,
     expl: false, ind: false, mirror: false, magnetic: false, teleport: false,
     isBoss: true,
-    phase: 0,       // 0=normal 1=enraged (below 50% HP)
+    phase: 0,
     moveDir: 1,
     moveSpd: 1.5 + level * 0.2,
   };
   bricks.push(bossBrick);
 
-  // Support bricks around the boss
-  const BW = 38, BH = 14, PX = 5;
+  const BW = 38, BH = 14, PX = 5, PY = 5;
   const cols = 8;
   const totalW = cols * (BW + PX) - PX;
   const sx = (W - totalW) / 2;
 
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < cols; c++) {
-      if (r === 0 && (c === 0 || c === cols - 1)) continue; // gaps
+      if (r === 0 && (c === 0 || c === cols - 1)) continue;
       bricks.push({
         x: sx + c * (BW + PX),
         y: 95 + r * (BH + PY),
@@ -719,7 +678,6 @@ function makeBossLevel() {
     }
   }
 
-  const PY = 5;
   showBanner(`⚠ BOSS LEVEL ${level} ⚠`, '#ff3d7f');
   playSound('rage');
 }
@@ -783,12 +741,6 @@ function initGame() {
   isRewinding  = false;
 
   screenShake = 0;
-
-  bulletTime = false;
-  bulletTimeFrames = 0;
-  nearMissCooldown = 0;
-  paddleStreakHits = 0;
-
   bossActive = false;
   bossBrick  = null;
 
@@ -896,7 +848,6 @@ function explodeBrick(b, chain) {
     playSound('nuke');
     screenShake = 25;
     showBanner('👾 BOSS DESTROYED!', '#ff3d7f');
-    // Drop lots of power-ups
     for (let i = 0; i < 5; i++) {
       setTimeout(() => tryDrop(b.x + b.w / 2 + (Math.random() - 0.5) * b.w, b.y + b.h / 2), i * 100);
     }
@@ -1253,37 +1204,7 @@ function applyMagnetism() {
 
 
 /* ============================================================
-   22b. BULLET TIME (auto near-miss)
-   ============================================================ */
-function checkBulletTime() {
-  if (bulletTime || nearMissCooldown > 0) return;
-  for (const ball of balls) {
-    if (ball.held) continue;
-    const padY  = gravFlipped ? PAD_H : H - PAD_H;
-    const distY = Math.abs(ball.y - padY);
-    const padX  = paddleX - paddleW / 2;
-    const inX   = ball.x > padX - 30 && ball.x < padX + paddleW + 30;
-    // Near miss = ball close to paddle edge AND moving toward it
-    const movingToPad = gravFlipped ? ball.dy < 0 : ball.dy > 0;
-    if (distY < 35 && distY > 14 && inX && movingToPad) {
-      triggerBulletTime();
-      return;
-    }
-  }
-}
-
-function triggerBulletTime() {
-  bulletTime = true;
-  bulletTimeFrames = 90; // ~1.5 seconds at normal speed
-  playSound('bulletTime');
-  showBanner('⚡ BULLET TIME ⚡', '#00ff9d');
-  addChip('bullet', 'slow', 'BULLET TIME');
-  nearMissCooldown = 300;
-}
-
-
-/* ============================================================
-   22c. TRAJECTORY PREVIEW
+   22b. TRAJECTORY PREVIEW
    ============================================================ */
 function getTrajectoryPoints(ball) {
   const pts = [];
@@ -1303,7 +1224,6 @@ function getTrajectoryPoints(ball) {
 
     pts.push({ x, y });
 
-    // Stop at first brick hit
     for (const br of bricks) {
       if (!br.alive || br.ind) continue;
       if (circRect(x, y, ballR, br.x, br.y, br.w, br.h)) {
@@ -1321,17 +1241,6 @@ function getTrajectoryPoints(ball) {
 function update() {
   if (gstate !== 'play' || isRewinding) return;
   frame++;
-
-  // Bullet time slows everything
-  const speedMul = bulletTime ? 0.35 : 1.0;
-  if (bulletTime) {
-    bulletTimeFrames--;
-    if (bulletTimeFrames <= 0) {
-      bulletTime = false;
-      removeChip('bullet');
-    }
-  }
-  if (nearMissCooldown > 0) nearMissCooldown--;
 
   // Banner countdown
   if (bannerTimer > 0) {
@@ -1353,7 +1262,7 @@ function update() {
   gravityWells = gravityWells.filter(g => { g.life--; return g.life > 0; });
   wormholes    = wormholes.filter(w => {
     w.life--;
-    w.spin     += 0.04 * speedMul;
+    w.spin     += 0.04;
     w.cooldownA = Math.max(0, w.cooldownA - 1);
     w.cooldownB = Math.max(0, w.cooldownB - 1);
     return w.life > 0;
@@ -1365,11 +1274,10 @@ function update() {
 
   // Boss brick movement
   if (bossActive && bossBrick && bossBrick.alive) {
-    bossBrick.x += bossBrick.moveDir * bossBrick.moveSpd * speedMul;
+    bossBrick.x += bossBrick.moveDir * bossBrick.moveSpd;
     if (bossBrick.x < 20 || bossBrick.x + bossBrick.w > W - 20) {
       bossBrick.moveDir *= -1;
     }
-    // Boss enrage at 50% HP
     if (bossBrick.hp < bossBrick.maxHp * 0.5 && bossBrick.phase === 0) {
       bossBrick.phase = 1;
       bossBrick.moveSpd *= 1.8;
@@ -1390,7 +1298,7 @@ function update() {
   // Lasers
   for (const l of lasers) {
     if (!l.alive) continue;
-    l.y += l.dy * speedMul;
+    l.y += l.dy;
     if (l.y + l.h < 0 || l.y > H) { l.alive = false; continue; }
     for (const br of bricks) {
       if (!br.alive) continue;
@@ -1415,7 +1323,6 @@ function update() {
   lasers = lasers.filter(l => l.alive);
 
   applyMagnetism();
-  checkBulletTime();
 
   // ================================================================
   // BALL LOOP
@@ -1435,8 +1342,8 @@ function update() {
     ball.trail.push({ x: ball.x, y: ball.y });
     if (ball.trail.length > 12) ball.trail.shift();
 
-    ball.x += ball.dx * speedMul;
-    ball.y += ball.dy * speedMul;
+    ball.x += ball.dx;
+    ball.y += ball.dy;
 
     // Gravity wells
     for (const gw of gravityWells) {
@@ -1526,13 +1433,6 @@ function update() {
         sparks(ball.x, padY, skin.glow, 5);
         setCombo(combo + 1);
         playSound('paddleHit');
-        paddleStreakHits++;
-        // Near miss badge
-        if (ball.y + ballR > padY - 6) {
-          floatScore(ball.x, padY - 20, 'NEAR MISS! +100', '#00ff9d');
-          score += 100;
-          bumpVal(hvScore, score.toLocaleString());
-        }
       }
     } else {
       if (ball.dy < 0 &&
@@ -1568,7 +1468,6 @@ function update() {
         lives--;
         refreshHearts();
         setCombo(0);
-        paddleStreakHits = 0;
         playSound('loseLife');
 
         if (lives <= 0) {
@@ -1665,7 +1564,6 @@ function update() {
           explodeBrick(br, false);
           playSound('nuke');
         } else {
-          // Bounce off boss
           const s = hitSide(ball.x, ball.y, br.x, br.y, br.w, br.h);
           if (s === 'left' || s === 'right') { ball.dx = -ball.dx; ball.x += ball.dx > 0 ? 3 : -3; }
           else { ball.dy = -ball.dy; ball.y += ball.dy > 0 ? 3 : -3; }
@@ -1705,7 +1603,7 @@ function update() {
 
   for (const p of pdrops) {
     if (!p.alive) continue;
-    p.y  += (gravFlipped ? -p.dy : p.dy) * speedMul;
+    p.y  += gravFlipped ? -p.dy : p.dy;
     p.bob += 0.08;
     if (Math.abs(p.y - catchY) < p.h && p.x + p.w / 2 >= catchX1 && p.x - p.w / 2 <= catchX2) {
       p.alive = false;
@@ -1718,8 +1616,8 @@ function update() {
 
   // Particles
   for (const p of parts) {
-    p.x += p.dx * speedMul;
-    p.y += p.dy * speedMul;
+    p.x += p.dx;
+    p.y += p.dy;
     if (!p.spark) p.dy += 0.08;
     p.life -= p.decay;
   }
@@ -1792,15 +1690,6 @@ function render() {
     ctx.save();
     ctx.globalAlpha = (rageLevel - 80) / 200;
     ctx.fillStyle   = '#ef4444';
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
-
-  // Bullet time tint
-  if (bulletTime) {
-    ctx.save();
-    ctx.globalAlpha = 0.06 + 0.04 * Math.sin(frame * 0.3);
-    ctx.fillStyle   = '#00ff9d';
     ctx.fillRect(0, 0, W, H);
     ctx.restore();
   }
@@ -1883,16 +1772,13 @@ function render() {
     const col  = bpct > 0.5 ? '#ff3d7f' : '#ff7c2a';
 
     ctx.save();
-    // Background
     ctx.globalAlpha = 0.5;
     ctx.fillStyle   = '#000';
     ctx.beginPath(); ctx.roundRect(bx, by, bw, 7, 3); ctx.fill();
-    // Fill
     ctx.globalAlpha = 1;
     ctx.fillStyle   = col;
     ctx.shadowColor = col; ctx.shadowBlur = 8;
     ctx.beginPath(); ctx.roundRect(bx, by, bw * bpct, 7, 3); ctx.fill();
-    // Label
     ctx.shadowBlur  = 0;
     ctx.fillStyle   = '#fff';
     ctx.font        = 'bold 7px Orbitron,monospace';
@@ -1913,7 +1799,6 @@ function render() {
     ctx.roundRect(br.x + ox, br.y, br.w, br.h, br.isBoss ? 6 : 3);
 
     if (br.isBoss) {
-      // Boss: animated gradient fill
       const pulse = 0.6 + 0.4 * Math.sin(frame * 0.1 + br.pulse);
       const grad  = ctx.createLinearGradient(br.x, br.y, br.x + br.w, br.y + br.h);
       grad.addColorStop(0, br.color);
@@ -1924,7 +1809,6 @@ function render() {
       ctx.lineWidth   = 1.5;
       ctx.shadowColor = br.color; ctx.shadowBlur = 12 * pulse;
       ctx.fill(); ctx.stroke();
-      // Boss label
       ctx.globalAlpha  = pulse;
       ctx.fillStyle    = '#fff';
       ctx.font         = 'bold 9px Orbitron,monospace';
@@ -2102,15 +1986,6 @@ function render() {
       ctx.beginPath(); ctx.arc(ball.x - 1.5, ball.y - 1.5, ballR * 0.38, 0, Math.PI * 2);
       ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore();
     }
-
-    // Bullet time ring
-    if (bulletTime) {
-      ctx.save();
-      ctx.globalAlpha = 0.3 + 0.2 * Math.sin(frame * 0.5);
-      ctx.strokeStyle = '#00ff9d'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(ball.x, ball.y, ballR + 4, 0, Math.PI * 2); ctx.stroke();
-      ctx.restore();
-    }
   }
 
   // --- Paddle ---
@@ -2157,14 +2032,6 @@ function render() {
     ctx.restore();
   }
 
-  // Bullet time border flash
-  if (bulletTime) {
-    ctx.save();
-    ctx.globalAlpha = 0.4 + 0.2 * Math.sin(frame * 0.4);
-    ctx.strokeStyle = '#00ff9d'; ctx.lineWidth = 2; ctx.strokeRect(1, 1, W - 2, H - 2);
-    ctx.restore();
-  }
-
   ctx.restore();
 }
 
@@ -2183,7 +2050,7 @@ function loop() {
    26. INPUT HANDLERS
    ============================================================ */
 function launch() {
-  ensureAudio(); // must be called from user gesture
+  ensureAudio();
   if (gstate === 'play') balls.forEach(b => { if (b.held) b.held = false; });
 }
 
@@ -2224,7 +2091,7 @@ obtn.addEventListener('click', e => {
 
 
 /* ============================================================
-   SKIN SELECTOR (injected into overlay on start)
+   SKIN SELECTOR
    ============================================================ */
 function buildSkinSelector() {
   const existing = document.getElementById('skin-sel');
@@ -2262,7 +2129,6 @@ function buildSkinSelector() {
     wrap.appendChild(btn);
   });
 
-  // Insert before the launch button
   overlay.insertBefore(wrap, obtn);
 }
 
@@ -2277,7 +2143,7 @@ showOv(
   'BRICKSTORM ULTRA',
   'Move with mouse · Space to launch<br>' +
   'R = Rewind · Q = Flip Gravity · T = Trajectory<br>' +
-  'Wormholes · Boss Bricks · Bullet Time · Patterns!<br><br>' +
+  'Wormholes · Boss Bricks · Patterns!<br><br>' +
   '<span style="color:var(--accent2);font-size:11px">x20 combo → NUKE · Full rage → RAGE MODE · Level 5 → BOSS</span>',
   'LAUNCH',
   null,
