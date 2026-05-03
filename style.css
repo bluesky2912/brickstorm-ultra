@@ -1,19 +1,11 @@
 /* ============================================================
-   BRICKSTORM ULTRA — style.css
-   All visual styling: layout, HUD, overlay, chips, animations
+   BRICKSTORM ULTRA — style.css (ENHANCED)
    ============================================================ */
 
-/* ---------- Google Fonts ---------- */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
 
-/* ---------- Reset ---------- */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ---------- CSS Variables (Theme) ---------- */
 :root {
   --bg:      #04050d;
   --panel:   #080c18;
@@ -25,7 +17,6 @@
   --accent3: #ffcc00;
 }
 
-/* ---------- Page ---------- */
 html, body {
   width: 100%;
   min-height: 100vh;
@@ -40,7 +31,6 @@ html, body {
   overflow-x: hidden;
 }
 
-/* ---------- Starfield Background ---------- */
 #stars {
   position: fixed;
   inset: 0;
@@ -61,7 +51,6 @@ html, body {
   to   { opacity: 0.60; }
 }
 
-/* ---------- Main Shell ---------- */
 #shell {
   position: relative;
   z-index: 1;
@@ -71,7 +60,6 @@ html, body {
   gap: 0;
 }
 
-/* ---------- Title ---------- */
 #gtitle {
   font-family: 'Orbitron', monospace;
   font-size: 20px;
@@ -97,7 +85,7 @@ html, body {
   to   { text-shadow: 0 0 30px var(--accent), 0 0 90px rgba(0,212,255,0.5); }
 }
 
-/* ---------- HUD Bar ---------- */
+/* HUD */
 #hud {
   display: flex;
   gap: 0;
@@ -121,7 +109,6 @@ html, body {
 
 .hc:last-child { border-right: none; }
 
-/* HUD label (tiny uppercase) */
 .hl {
   font-family: 'Orbitron', monospace;
   font-size: 6px;
@@ -130,7 +117,6 @@ html, body {
   color: var(--muted);
 }
 
-/* HUD value (large number) */
 .hv {
   font-family: 'Orbitron', monospace;
   font-size: 15px;
@@ -148,7 +134,6 @@ html, body {
   100% { transform: scale(1); }
 }
 
-/* Combo display */
 #combo-disp {
   font-family: 'Orbitron', monospace;
   font-size: 13px;
@@ -158,7 +143,6 @@ html, body {
   transition: all 0.15s;
 }
 
-/* Lives row (hearts) */
 #lives-row {
   display: flex;
   gap: 4px;
@@ -169,7 +153,7 @@ html, body {
 .hrt {
   font-size: 12px;
   transition: transform 0.3s, filter 0.3s;
-  filter: grayscale(1) brightness(0.3); /* dim = lost */
+  filter: grayscale(1) brightness(0.3);
 }
 
 .hrt.on  { filter: none; }
@@ -181,7 +165,7 @@ html, body {
   100% { transform: scale(1); }
 }
 
-/* ---------- Canvas Wrapper ---------- */
+/* Canvas */
 #cwrap {
   position: relative;
   width: 540px;
@@ -197,7 +181,7 @@ canvas {
   background: var(--bg);
 }
 
-/* ---------- Overlay (Start / Game Over / Level Up) ---------- */
+/* Overlay */
 #overlay {
   position: absolute;
   inset: 0;
@@ -215,7 +199,6 @@ canvas {
 #overlay.show { opacity: 1; pointer-events: all; }
 #overlay.hide { opacity: 0; pointer-events: none; }
 
-/* Overlay title */
 .ot {
   font-family: 'Orbitron', monospace;
   font-size: 30px;
@@ -224,7 +207,6 @@ canvas {
   text-align: center;
 }
 
-/* Overlay subtitle text */
 .os {
   font-size: 13px;
   color: var(--muted);
@@ -233,7 +215,6 @@ canvas {
   font-family: 'Rajdhani', sans-serif;
 }
 
-/* Overlay button */
 .ob {
   padding: 11px 36px;
   background: transparent;
@@ -255,7 +236,6 @@ canvas {
   box-shadow: 0 0 30px rgba(0,212,255,0.3);
 }
 
-/* End-screen stats row */
 .ostats {
   display: flex;
   gap: 16px;
@@ -284,7 +264,7 @@ canvas {
   font-family: 'Orbitron', monospace;
 }
 
-/* ---------- Power-Up Bar ---------- */
+/* Power-up bar */
 #bbar {
   display: flex;
   align-items: center;
@@ -309,7 +289,7 @@ canvas {
   white-space: nowrap;
 }
 
-/* ---------- Power-Up Chips ---------- */
+/* Chips */
 .chip {
   font-family: 'Orbitron', monospace;
   font-size: 8px;
@@ -326,7 +306,6 @@ canvas {
   to   { transform: scale(1)   translateY(0);   opacity: 1; }
 }
 
-/* One colour class per power-up type */
 .chip.wide    { color: #60a5fa; border-color: #60a5fa55; background: #60a5fa15; }
 .chip.multi   { color: #ff3d7f; border-color: #ff3d7f55; background: #ff3d7f15; }
 .chip.slow    { color: #00ff9d; border-color: #00ff9d55; background: #00ff9d15; }
@@ -338,9 +317,23 @@ canvas {
 .chip.ghost   { color: #94a3b8; border-color: #94a3b855; background: #94a3b815; }
 .chip.rewind  { color: #fb923c; border-color: #fb923c55; background: #fb923c15; }
 .chip.magnet  { color: #f472b6; border-color: #f472b655; background: #f472b615; }
-.chip.rage    { color: #ef4444; border-color: #ef444455; background: #ef444415; }
+.chip.rage    { color: #ef4444; border-color: #ef444455; background: #ef444415;
+                animation: rage-pulse 0.4s ease infinite alternate; }
+.chip.bullet  { color: #00ff9d; border-color: #00ff9d55; background: #00ff9d15; }
+.chip.boss    { color: #ff3d7f; border-color: #ff3d7f88; background: #ff3d7f22;
+                animation: boss-pulse 0.5s ease infinite alternate; }
 
-/* ---------- Floating Score Pop ---------- */
+@keyframes rage-pulse {
+  from { box-shadow: 0 0 4px #ef444444; }
+  to   { box-shadow: 0 0 10px #ef444488; }
+}
+
+@keyframes boss-pulse {
+  from { box-shadow: 0 0 4px #ff3d7f44; }
+  to   { box-shadow: 0 0 12px #ff3d7f88; transform: scale(1.05); }
+}
+
+/* Floating score pop */
 .fpop {
   position: absolute;
   pointer-events: none;
@@ -351,6 +344,7 @@ canvas {
   animation: fup 0.9s ease forwards;
   z-index: 20;
   transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 @keyframes fup {
@@ -358,7 +352,7 @@ canvas {
   100% { opacity: 0; transform: translateX(-50%) translateY(-38px); }
 }
 
-/* ---------- Hint Bar ---------- */
+/* Hint bar */
 #hint {
   margin-top: 8px;
   font-size: 9px;
@@ -368,7 +362,7 @@ canvas {
   text-align: center;
 }
 
-/* ---------- Event Banner (mid-game announcements) ---------- */
+/* Event banner */
 #event-banner {
   position: absolute;
   top: 10px;
@@ -389,3 +383,9 @@ canvas {
 }
 
 #event-banner.show { opacity: 1; }
+
+/* Skin selector buttons hover */
+#skin-sel button:hover {
+  filter: brightness(1.3);
+  transform: scale(1.08);
+}
